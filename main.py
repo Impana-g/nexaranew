@@ -1,6 +1,8 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from routers import analyze, kb, sentiment
+from routers import pdf_analyze
+from routers import rag
 
 app = FastAPI(
     title="Nexara Investment Intelligence API",
@@ -22,3 +24,15 @@ app.include_router(sentiment.router, prefix="/api/v1", tags=["Sentiment"])
 @app.get("/")
 def root():
     return {"service": "Nexara Investment Intelligence", "status": "running"}
+
+app.include_router(
+    pdf_analyze.router,
+    prefix="/api/v1",
+    tags=["PDF Analysis"]
+)
+
+app.include_router(
+    rag.router,
+    prefix="/api/v1",
+    tags=["RAG"]
+)

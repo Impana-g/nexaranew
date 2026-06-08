@@ -208,22 +208,110 @@ if st.button("Analyze", type="primary"):
             len(bg["red_flags"])
         )
 
-    if bg["positive_signals"]:
-        st.write("### Positive Signals")
+# -----------------------------
+# PDF Analysis
+# -----------------------------
+st.divider()
 
-        for signal in bg["positive_signals"]:
-            st.success(signal)
+st.header("📄 PDF Investment Analysis")
 
-    if bg["red_flags"]:
-        st.write("### Red Flags")
+uploaded_file = st.file_uploader(
+    "Upload Annual Report / Financial Report",
+    type=["pdf"]
+)
 
-        for flag in bg["red_flags"]:
-            st.error(flag)
+if uploaded_file is not None:
 
-    # -----------------------------
-    # Pipeline Stages
-    # -----------------------------
-    st.subheader("⚙ Analysis Pipeline")
+    if st.button("Analyze PDF"):
 
-    for stage in result["pipeline_stages"]:
-        st.success(stage)
+        files = {
+            "file": (
+                uploaded_file.name,
+                uploaded_file,
+                "application/pdf"
+            )
+        }
+
+        try:
+            response = requests.post(
+                "http://127.0.0.1:8000/api/v1/analyze-pdf",
+                files=files,
+                timeout=60
+            )
+
+            result = response.json()
+
+            st.subheader("📌 Recommendation")
+
+            if result["recommendation"] == "N/A":
+
+                st.info(result["message"])
+
+            else:
+
+                st.success(result["recommendation"])
+
+                st.write("Risk:", result["risk"])
+
+                st.write(
+                    "Positive Signals:",
+                    result["positive_signals"]
+                )
+
+                st.write(
+                    "Negative Signals:",
+                    result["negative_signals"]
+                )
+
+            st.subheader("📄 Document Preview")
+
+            st.text_area(
+                "Preview",
+                result["preview"],
+                height=250
+            )
+
+        except Exception as e:
+            st.error(f"Error: {e}")
+
+# -----------------------------
+# RAG Question Answering
+# -----------------------------
+st.divider()
+
+st.header("💬 Ask Questions About Uploaded PDF")
+
+question = st.text_input(
+    "Ask a question about the uploaded document"
+)
+
+if st.button("Ask PDF"):
+
+    if not question:
+        st.warning("Please enter a question.")
+    else:
+
+        try:
+
+            response = requests.post(
+                "http://127.0.0.1:8000/api/v1/ask",
+                json={
+                    "question": question
+                },
+                timeout=30
+            )
+
+            result = response.json()
+
+            st.subheader("📖 Retrieved Information")
+
+            if result.get("answer_chunks"):
+
+                for chunk in result["answer_chunks"]:
+                    st.info(chunk)
+
+            else:
+                st.warning("No relevant information found.")
+
+        except Exception as e:
+            st.error(f"Error: {e}")
