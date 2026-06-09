@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 TAVILY_API_KEY = os.getenv("TAVILY_API_KEY", "")
-
+ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
 
 # Supported tech companies for training/KB
 SUPPORTED_COMPANIES = {
