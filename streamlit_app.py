@@ -277,6 +277,9 @@ if uploaded_file is not None:
 # -----------------------------
 # RAG Question Answering
 # -----------------------------
+# -----------------------------
+# RAG Question Answering
+# -----------------------------
 st.divider()
 
 st.header("💬 Ask Questions About Uploaded PDF")
@@ -289,6 +292,7 @@ if st.button("Ask PDF"):
 
     if not question:
         st.warning("Please enter a question.")
+
     else:
 
         try:
@@ -298,20 +302,35 @@ if st.button("Ask PDF"):
                 json={
                     "question": question
                 },
-                timeout=30
+                timeout=60
             )
 
             result = response.json()
 
-            st.subheader("📖 Retrieved Information")
+            st.subheader("🤖 AI Answer")
+
+            if "answer" in result:
+
+                st.success(
+                    result["answer"]
+                )
 
             if result.get("answer_chunks"):
 
-                for chunk in result["answer_chunks"]:
-                    st.info(chunk)
+                with st.expander("Retrieved Chunks"):
+
+                    for chunk in result["answer_chunks"]:
+
+                        st.write(chunk)
 
             else:
-                st.warning("No relevant information found.")
+
+                st.warning(
+                    "No relevant information found."
+                )
 
         except Exception as e:
-            st.error(f"Error: {e}")
+
+            st.error(
+                f"Error: {e}"
+            )

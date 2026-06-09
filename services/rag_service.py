@@ -1,6 +1,12 @@
 from sentence_transformers import SentenceTransformer
 import faiss
 import numpy as np
+from anthropic import Anthropic
+from core.config import ANTHROPIC_API_KEY
+
+client = Anthropic(
+    api_key=ANTHROPIC_API_KEY
+)
 
 model = SentenceTransformer("all-MiniLM-L6-v2")
 
@@ -57,3 +63,34 @@ def retrieve(query, k=3):
             results.append(chunks_store[idx])
 
     return results
+
+def generate_answer(question, chunks):
+
+    context = "\n\n".join(chunks)
+
+    prompt = f"""
+You are a financial document analyst.
+
+Use ONLY the provided context.
+
+Context:
+{context}
+
+Question:
+{question}
+
+Answer clearly and concisely.
+"""
+
+    response = client.messages.create(
+        model="claude-3-haiku-20240307",
+        max_tokens=500,
+        messages=[
+            {
+                "role": "user",
+                "content": prompt
+            }
+        ]
+    )
+
+    return response.content[0].text
