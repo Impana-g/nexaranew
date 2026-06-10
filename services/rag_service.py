@@ -4,6 +4,10 @@ import numpy as np
 from anthropic import Anthropic
 from core.config import ANTHROPIC_API_KEY
 
+
+print("ANTHROPIC KEY FOUND:", bool(ANTHROPIC_API_KEY))
+print("KEY LENGTH:", len(ANTHROPIC_API_KEY))
+
 client = Anthropic(
     api_key=ANTHROPIC_API_KEY
 )
@@ -66,9 +70,11 @@ def retrieve(query, k=3):
 
 def generate_answer(question, chunks):
 
-    context = "\n\n".join(chunks)
+    try:
 
-    prompt = f"""
+        context = "\n\n".join(chunks)
+
+        prompt = f"""
 You are a financial document analyst.
 
 Use ONLY the provided context.
@@ -82,15 +88,18 @@ Question:
 Answer clearly and concisely.
 """
 
-    response = client.messages.create(
-        model="claude-3-haiku-20240307",
-        max_tokens=500,
-        messages=[
-            {
-                "role": "user",
-                "content": prompt
-            }
-        ]
-    )
+        response = client.messages.create(
+            model="claude-sonnet-4-20250514",
+            max_tokens=500,
+            messages=[
+                {
+                    "role": "user",
+                    "content": prompt
+                }
+            ]
+        )
 
-    return response.content[0].text
+        return response.content[0].text
+
+    except Exception as e:
+        return f"CLAUDE ERROR: {str(e)}"

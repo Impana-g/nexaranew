@@ -16,15 +16,23 @@ class QuestionRequest(BaseModel):
 @router.post("/ask")
 async def ask_question(data: QuestionRequest):
 
-    chunks = retrieve(data.question)
+    try:
 
-    answer = generate_answer(
-        data.question,
-        chunks
-    )
+        chunks = retrieve(data.question)
 
-    return {
-        "question": data.question,
-        "answer": answer,
-        "answer_chunks": chunks
-    }
+        answer = generate_answer(
+            data.question,
+            chunks
+        )
+
+        return {
+            "question": data.question,
+            "answer": answer,
+            "answer_chunks": chunks
+        }
+
+    except Exception as e:
+
+        return {
+            "error": str(e)
+        }
