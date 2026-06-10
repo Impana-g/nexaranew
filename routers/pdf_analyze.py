@@ -1,12 +1,19 @@
 from fastapi import APIRouter, UploadFile, File
 from services.pdf_service import extract_pdf_text
+from services.rag_service import (
+    build_vector_store,
+    analyze_financial_document
+)
 import tempfile
-from services.rag_service import build_vector_store
+import time
+
 router = APIRouter()
 
 
 @router.post("/analyze-pdf")
 async def analyze_pdf(file: UploadFile = File(...)):
+
+    print("STEP 1: PDF uploaded")
 
     # Save uploaded PDF temporarily
     with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as temp:
@@ -14,12 +21,20 @@ async def analyze_pdf(file: UploadFile = File(...)):
         pdf_path = temp.name
 
     # Extract text
-    text = extract_pdf_text(pdf_path)
-    build_vector_store(text)
+    start = time.time()
 
+    text = extract_pdf_text(pdf_path)
+
+    print("STEP 2: Text extracted")
+    print("Text length:", len(text))
+    print("Extraction Time:", round(time.time() - start, 2), "seconds")
+
+    # Limit huge PDFs for faster processing
+    text = text[:50000]
+
+    # Check if document is financial
     text_lower = text.lower()
 
-    # Check if this is actually a financial document
     financial_keywords = [
         "revenue",
         "profit",
@@ -36,7 +51,6 @@ async def analyze_pdf(file: UploadFile = File(...)):
         for word in financial_keywords
     )
 
-    # If not financial, stop here
     if financial_count < 3:
         return {
             "document_type": "Non-Financial Document",
@@ -45,54 +59,23 @@ async def analyze_pdf(file: UploadFile = File(...)):
             "preview": text[:1000]
         }
 
-    # Financial analysis
-    positive_words = [
-        "growth",
-        "profit",
-        "increase",
-        "strong",
-        "revenue",
-        "expansion",
-        "innovation"
-    ]
+    # Claude Analysis
+    print("STEP 3: Claude analysis started")
 
-    negative_words = [
-        "loss",
-        "risk",
-        "decline",
-        "debt",
-        "drop",
-        "weak",
-        "lawsuit"
-    ]
+    analysis = analyze_financial_document(text)
 
-    pos_count = sum(
-        text_lower.count(word)
-        for word in positive_words
-    )
+    print("STEP 4: Claude analysis completed")
 
-    neg_count = sum(
-        text_lower.count(word)
-        for word in negative_words
-    )
+    # Build FAISS for RAG
+    start = time.time()
 
-    if pos_count > neg_count:
-        recommendation = "BUY"
-        risk = "LOW"
+    build_vector_store(text)
 
-    elif neg_count > pos_count:
-        recommendation = "AVOID"
-        risk = "HIGH"
-
-    else:
-        recommendation = "HOLD"
-        risk = "MEDIUM"
+    print("STEP 5: FAISS index built")
+    print("FAISS Time:", round(time.time() - start, 2), "seconds")
 
     return {
         "document_type": "Financial Report",
-        "recommendation": recommendation,
-        "risk": risk,
-        "positive_signals": pos_count,
-        "negative_signals": neg_count,
+        "ai_analysis": analysis,
         "preview": text[:1000]
     }

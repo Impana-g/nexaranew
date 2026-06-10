@@ -4,7 +4,6 @@ import numpy as np
 from anthropic import Anthropic
 from core.config import ANTHROPIC_API_KEY
 
-
 print("ANTHROPIC KEY FOUND:", bool(ANTHROPIC_API_KEY))
 print("KEY LENGTH:", len(ANTHROPIC_API_KEY))
 
@@ -18,7 +17,7 @@ chunks_store = []
 index = None
 
 
-def chunk_text(text, chunk_size=500):
+def chunk_text(text, chunk_size=1500):
     chunks = []
 
     for i in range(0, len(text), chunk_size):
@@ -34,7 +33,13 @@ def build_vector_store(text):
 
     chunks_store = chunk_text(text)
 
-    embeddings = model.encode(chunks_store)
+    print("Total Chunks:", len(chunks_store))
+
+    embeddings = model.encode(
+        chunks_store,
+        batch_size=32,
+        show_progress_bar=True
+    )
 
     dimension = embeddings.shape[1]
 
@@ -68,6 +73,7 @@ def retrieve(query, k=3):
 
     return results
 
+
 def generate_answer(question, chunks):
 
     try:
@@ -91,6 +97,54 @@ Answer clearly and concisely.
         response = client.messages.create(
             model="claude-sonnet-4-20250514",
             max_tokens=500,
+            messages=[
+                {
+                    "role": "user",
+                    "content": prompt
+                }
+            ]
+        )
+
+        return response.content[0].text
+
+    except Exception as e:
+        return f"CLAUDE ERROR: {str(e)}"
+
+
+def analyze_financial_document(text):
+
+    try:
+
+        prompt = f"""
+You are a senior investment analyst.
+
+Analyze the following annual report and provide a professional investment recommendation.
+
+Financial Report:
+{text[:10000]}
+
+Return the response in this format:
+
+Recommendation: BUY / HOLD / AVOID
+
+Risk Level: LOW / MEDIUM / HIGH
+
+Key Strengths:
+- Point 1
+- Point 2
+- Point 3
+
+Key Risks:
+- Point 1
+- Point 2
+
+Investment Summary:
+(2-3 sentences)
+"""
+
+        response = client.messages.create(
+            model="claude-sonnet-4-20250514",
+            max_tokens=1000,
             messages=[
                 {
                     "role": "user",

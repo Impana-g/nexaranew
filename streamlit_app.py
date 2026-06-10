@@ -211,6 +211,9 @@ if st.button("Analyze", type="primary"):
 # -----------------------------
 # PDF Analysis
 # -----------------------------
+# -----------------------------
+# PDF Analysis
+# -----------------------------
 st.divider()
 
 st.header("📄 PDF Investment Analysis")
@@ -233,50 +236,68 @@ if uploaded_file is not None:
         }
 
         try:
-            response = requests.post(
-                "http://127.0.0.1:8000/api/v1/analyze-pdf",
-                files=files,
-                timeout=60
-            )
+
+            with st.spinner(
+                "🤖 Claude is analyzing the financial report..."
+            ):
+
+                response = requests.post(
+                    "http://127.0.0.1:8000/api/v1/analyze-pdf",
+                    files=files,
+                    timeout=300
+                )
 
             result = response.json()
 
-            st.subheader("📌 Recommendation")
+            # -----------------------------
+            # Claude Analysis
+            # -----------------------------
+            if "ai_analysis" in result:
 
-            if result["recommendation"] == "N/A":
+                st.subheader(
+                    "🤖 Claude Investment Analysis"
+                )
 
-                st.info(result["message"])
+                st.success(
+                    "Analysis Complete"
+                )
+
+                st.markdown(
+                    result["ai_analysis"]
+                )
+
+            elif result.get(
+                "recommendation"
+            ) == "N/A":
+
+                st.warning(
+                    result["message"]
+                )
 
             else:
 
-                st.success(result["recommendation"])
-
-                st.write("Risk:", result["risk"])
-
-                st.write(
-                    "Positive Signals:",
-                    result["positive_signals"]
+                st.error(
+                    "No analysis returned from API."
                 )
 
-                st.write(
-                    "Negative Signals:",
-                    result["negative_signals"]
-                )
-
-            st.subheader("📄 Document Preview")
+            # -----------------------------
+            # Document Preview
+            # -----------------------------
+            st.subheader(
+                "📄 Document Preview"
+            )
 
             st.text_area(
                 "Preview",
                 result["preview"],
-                height=250
+                height=300
             )
 
         except Exception as e:
-            st.error(f"Error: {e}")
 
-# -----------------------------
-# RAG Question Answering
-# -----------------------------
+            st.error(
+                f"Error: {e}"
+            )
 # -----------------------------
 # RAG Question Answering
 # -----------------------------
@@ -297,13 +318,15 @@ if st.button("Ask PDF"):
 
         try:
 
-            response = requests.post(
-                "http://127.0.0.1:8000/api/v1/ask",
-                json={
-                    "question": question
-                },
-                timeout=60
-            )
+            with st.spinner("Searching document..."):
+
+                response = requests.post(
+                    "http://127.0.0.1:8000/api/v1/ask",
+                    json={
+                        "question": question
+                    },
+                    timeout=300
+                )
 
             result = response.json()
 
@@ -317,7 +340,9 @@ if st.button("Ask PDF"):
 
             if result.get("answer_chunks"):
 
-                with st.expander("Retrieved Chunks"):
+                with st.expander(
+                    "Retrieved Chunks"
+                ):
 
                     for chunk in result["answer_chunks"]:
 
